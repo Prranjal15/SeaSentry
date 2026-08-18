@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/historyRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#B3E5FC"
+    android:orientation="vertical">
+
+    <!-- Header Section -->
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="20dp">
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="SEASENTRY"
+                android:textColor="#FF6B00"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.1" />
+            <TextView
+                android:id="@+id/tvHistoryTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Safety History"
+                android:textColor="#0D2137"
+                android:textSize="22sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- Day/Night Toggle -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/historyToggle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="0dp"
+            app:cardBackgroundColor="#FFFFFF">
+            <TextView
+                android:id="@+id/tvToggleText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingHorizontal="14dp"
+                android:paddingVertical="6dp"
+                android:text="🔆 DAY"
+                android:textColor="#FF6B00"
+                android:textStyle="bold"
+                android:textSize="10sp"/>
+        </androidx.cardview.widget.CardView>
+    </RelativeLayout>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <LinearLayout
+            android:id="@+id/logsContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="16dp">
+
+            <!-- 1. Collision Risk (CRITICAL) -->
+            <androidx.cardview.widget.CardView
+                android:id="@+id/card1"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardBackgroundColor="#EAF6FD"
+                app:cardCornerRadius="20dp"
+                android:layout_marginBottom="12dp"
+                android:clickable="true"
+                android:focusable="true">
+                <RelativeLayout android:padding="16dp" android:layout_width="match_parent" android:layout_height="wrap_content">
+                    <ImageView android:id="@+id/icon1" android:layout_width="30dp" android:layout_height="30dp" android:src="@drawable/notification" app:tint="#D90429"/>
+                    <LinearLayout android:layout_toEndOf="@id/icon1" android:layout_marginStart="14dp" android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="vertical">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Collision Risk" android:textStyle="bold" android:textColor="#0D2137" android:textSize="15sp"/>
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="16 Aug 2026 · 06:29 UTC" android:textSize="11sp"/>
+                    </LinearLayout>
+                    <TextView android:layout_alignParentEnd="true" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="CRITICAL" android:textColor="#D90429" android:textStyle="bold" android:textSize="9sp"/>
+                </RelativeLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- 2. Boundary Approach (HIGH) -->
+            <androidx.cardview.widget.CardView
+                android:id="@+id/card2"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardBackgroundColor="#EAF6FD"
+                app:cardCornerRadius="20dp"
+                android:layout_marginBottom="12dp">
+                <RelativeLayout android:padding="16dp" android:layout_width="match_parent" android:layout_height="wrap_content">
+                    <ImageView android:id="@+id/icon2" android:layout_width="30dp" android:layout_height="30dp" android:src="@drawable/clock" app:tint="#FF6B00"/>
+                    <LinearLayout android:layout_toEndOf="@id/icon2" android:layout_marginStart="14dp" android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="vertical">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Boundary Approach" android:textStyle="bold" android:textColor="#0D2137" android:textSize="15sp"/>
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="17 Aug 2026 · 14:32 UTC" android:textSize="11sp"/>
+                    </LinearLayout>
+                    <TextView android:layout_alignParentEnd="true" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="HIGH" android:textColor="#FF6B00" android:textStyle="bold" android:textSize="9sp"/>
+                </RelativeLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- 3. Anchor Drag Detected (HIGH) -->
+            <androidx.cardview.widget.CardView
+                android:id="@+id/card3"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardBackgroundColor="#EAF6FD"
+                app:cardCornerRadius="20dp"
+                android:layout_marginBottom="12dp">
+                <RelativeLayout android:padding="16dp" android:layout_width="match_parent" android:layout_height="wrap_content">
+                    <ImageView android:id="@+id/icon3" android:layout_width="30dp" android:layout_height="30dp" android:src="@drawable/fishing_boat" app:tint="#FF6B00"/>
+                    <LinearLayout android:layout_toEndOf="@id/icon3" android:layout_marginStart="14dp" android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="vertical">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Anchor Drag Detected" android:textStyle="bold" android:textColor="#0D2137" android:textSize="15sp"/>
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="16 Aug 2026 · 23:47 UTC" android:textSize="11sp"/>
+                    </LinearLayout>
+                    <TextView android:layout_alignParentEnd="true" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="HIGH" android:textColor="#FF6B00" android:textStyle="bold" android:textSize="9sp"/>
+                </RelativeLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- 4. Gale Warning (MEDIUM) -->
+            <androidx.cardview.widget.CardView
+                android:id="@+id/card4"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardBackgroundColor="#EAF6FD"
+                app:cardCornerRadius="20dp"
+                android:layout_marginBottom="12dp">
+                <RelativeLayout android:padding="16dp" android:layout_width="match_parent" android:layout_height="wrap_content">
+                    <ImageView android:id="@+id/icon4" android:layout_width="30dp" android:layout_height="30dp" android:src="@drawable/notification" app:tint="#F4B942"/>
+                    <LinearLayout android:layout_toEndOf="@id/icon4" android:layout_marginStart="14dp" android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="vertical">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Gale Warning" android:textStyle="bold" android:textColor="#0D2137" android:textSize="15sp"/>
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="16 Aug 2026 · 18:05 UTC" android:textSize="11sp"/>
+                    </LinearLayout>
+                    <TextView android:layout_alignParentEnd="true" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="MEDIUM" android:textColor="#F4B942" android:textStyle="bold" android:textSize="9sp"/>
+                </RelativeLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- 5. Rough Sea State (MEDIUM) -->
+            <androidx.cardview.widget.CardView
+                android:id="@+id/card5"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardBackgroundColor="#EAF6FD"
+                app:cardCornerRadius="20dp"
+                android:layout_marginBottom="20dp">
+                <RelativeLayout android:padding="16dp" android:layout_width="match_parent" android:layout_height="wrap_content">
+                    <ImageView android:id="@+id/icon5" android:layout_width="30dp" android:layout_height="30dp" android:src="@drawable/fishing_boat" app:tint="#F4B942"/>
+                    <LinearLayout android:layout_toEndOf="@id/icon5" android:layout_marginStart="14dp" android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="vertical">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Rough Sea State" android:textStyle="bold" android:textColor="#0D2137" android:textSize="15sp"/>
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="17 Aug 2026 · 09:11 UTC" android:textSize="11sp"/>
+                    </LinearLayout>
+                    <TextView android:layout_alignParentEnd="true" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="MEDIUM" android:textColor="#F4B942" android:textStyle="bold" android:textSize="9sp"/>
+                </RelativeLayout>
+            </androidx.cardview.widget.CardView>
+
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- CENTERED CLEAR LOGS BUTTON -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:padding="16dp">
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btnClearAll"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:background="@drawable/btn_orange_rounded"
+            android:text="🗑 CLEAR ALL LOGS"
+            android:textColor="#FFFFFF"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:textSize="14sp" />
+    </LinearLayout>
+
+</LinearLayout>

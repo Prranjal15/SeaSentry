@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Light Sea Blue Palette (Day Mode) -->
+    <color name="sea_day_bg">#B3E5FC</color>         <!-- Light Sea Blue -->
+    <color name="sea_day_card">#EAF6FD</color>       <!-- Very Light Blue Card -->
+    <color name="sea_text_navy">#0D2137</color>      <!-- Dark Navy for Text -->
+    <color name="safety_orange">#FF6B00</color>      <!-- Alert Orange -->
+    <color name="white">#FFFFFF</color>
+    <color name="gray_muted">#4A6178</color>
+</resources>
