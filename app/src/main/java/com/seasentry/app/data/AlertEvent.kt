@@ -11,5 +11,7 @@ data class AlertEvent(
     val tier: String,
     val latitude: Double,
     val longitude: Double,
-    val timestamp: Long
+    val timestamp: Long,
+    val title: String = "Boundary Approach",
+    val details: String = ""
 )

@@ -5,6 +5,9 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
+    <!-- Vibration Permission for Emergency Alerts -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+
     <!-- Legacy Bluetooth Permissions for Android 11 (API 30) and below -->
     <uses-permission
         android:name="android.permission.BLUETOOTH"
