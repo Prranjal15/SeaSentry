@@ -1,19 +1,29 @@
 package com.seasentry.app.ui;
+
 import android.content.Intent;
 import android.os.Bundle;
-import android.os.Handler;
+import android.widget.Button;
 import androidx.appcompat.app.AppCompatActivity;
 import com.seasentry.app.R;
 
 public class SplashActivity extends AppCompatActivity {
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // This MUST match the XML file name
         setContentView(R.layout.activity_splash);
-        // Wait 2 seconds then go to Settings
-        new Handler().postDelayed(() -> {
-            startActivity(new Intent(SplashActivity.this, VesselSettingsActivity.class));
-            finish();
-        }, 2000);
+
+        Button authBtn = findViewById(R.id.btnSplashAuth);
+
+        if (authBtn != null) {
+            authBtn.setOnClickListener(v -> {
+                // GO TO DASHBOARD (THE MAIN HUB)
+                Intent intent = new Intent(SplashActivity.this, DashboardActivity.class);
+                startActivity(intent);
+                finish();
+            });
+        }
     }
 }
