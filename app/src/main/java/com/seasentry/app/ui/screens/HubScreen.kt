@@ -20,15 +20,24 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.seasentry.app.navarea.NavigationalWarning
 import com.seasentry.app.ui.components.AlertBellIcon
 import com.seasentry.app.ui.components.SatelliteIcon
 import com.seasentry.app.ui.components.SeaSentryTopHeader
@@ -36,13 +45,17 @@ import com.seasentry.app.ui.components.VesselLineArtIcon
 import com.seasentry.app.ui.theme.CardWhite
 import com.seasentry.app.ui.theme.EmergencyRed
 import com.seasentry.app.ui.theme.OceanCard
+import com.seasentry.app.ui.theme.OceanDark
 import com.seasentry.app.ui.theme.OrangePrimary
 import com.seasentry.app.ui.theme.OrangeText
 import com.seasentry.app.ui.theme.SkyBlueBackground
 import com.seasentry.app.ui.theme.StatusGreen
 import com.seasentry.app.ui.theme.TextDarkNavy
 import com.seasentry.app.ui.theme.TextSecondarySlate
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
+import java.util.TimeZone
 
 @Composable
 fun HubScreen(
@@ -55,9 +68,13 @@ fun HubScreen(
     onNavigateToSurvival: () -> Unit,
     onNavigateToCoastGuard: () -> Unit,
     onNavigateToSettings: () -> Unit,
+    navWarnings: List<NavigationalWarning> = emptyList(),
+    onSimulateHazardWarning: () -> Unit = {},
+    onDismissNavWarning: ((String) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val scrollState = rememberScrollState()
+    var selectedWarning by remember { mutableStateOf<NavigationalWarning?>(null) }
 
     val formattedCoords = String.format(
         Locale.US,
@@ -185,6 +202,25 @@ fun HubScreen(
                     }
                 }
 
+                // Active NAVAREA Hazard Warnings (if any injected)
+                if (navWarnings.isNotEmpty()) {
+                    Text(
+                        text = "ACTIVE NAVAREA HAZARD WARNINGS (${navWarnings.size})",
+                        color = TextDarkNavy,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 1.sp,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+
+                    navWarnings.forEach { warning ->
+                        NavAreaWarningCard(
+                            warning = warning,
+                            onClick = { selectedWarning = warning }
+                        )
+                    }
+                }
+
                 // Quick Action Cards Section
                 Text(
                     text = "SAFETY MODULES & CONTROLS",
@@ -195,7 +231,66 @@ fun HubScreen(
                     modifier = Modifier.padding(top = 4.dp)
                 )
 
-                // Interactive Demo Card (Key requirement)
+                // Simulate Hazard Warning Demo Card
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onSimulateHazardWarning() },
+                    shape = RoundedCornerShape(18.dp),
+                    colors = CardDefaults.cardColors(containerColor = CardWhite),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(44.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Color(0xFF6366F1).copy(alpha = 0.12f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("⚠️", fontSize = 22.sp)
+                        }
+                        Spacer(modifier = Modifier.width(14.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = "Simulate Hazard Warning",
+                                    color = TextDarkNavy,
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .background(Color(0xFF6366F1).copy(alpha = 0.15f))
+                                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                                ) {
+                                    Text(
+                                        text = "DEMO",
+                                        color = Color(0xFF4338CA),
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Black,
+                                        letterSpacing = 0.5.sp
+                                    )
+                                }
+                            }
+                            Text(
+                                text = "Broadcast realistic NAVAREA VIII hazard advisory",
+                                color = TextSecondarySlate,
+                                fontSize = 12.sp
+                            )
+                        }
+                        Text("›", color = Color(0xFF6366F1), fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+
+                // Interactive Demo Card
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -367,7 +462,7 @@ fun HubScreen(
             }
         }
 
-        // Bottom Docked SOS Button (matching Image 4)
+        // Bottom Docked SOS Button
         Button(
             onClick = onSendSOS,
             modifier = Modifier
@@ -400,5 +495,335 @@ fun HubScreen(
                 )
             }
         }
+
+        // Bottom Sheet for Hazard Warning Details
+        selectedWarning?.let { warning ->
+            NavAreaWarningBottomSheet(
+                warning = warning,
+                onDismissRequest = { selectedWarning = null }
+            )
+        }
     }
+}
+
+/**
+ * Visually distinct card for NAVAREA warnings labeled with DEMO badge.
+ */
+@Composable
+fun NavAreaWarningCard(
+    warning: NavigationalWarning,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = CardWhite),
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color(0xFF6366F1).copy(alpha = 0.12f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("⚠️", fontSize = 16.sp)
+                    }
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = "NAVAREA VIII ADVISORY",
+                        color = Color(0xFF4F46E5),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 0.6.sp
+                    )
+                }
+
+                // Distinct DEMO Badge
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(Color(0xFF6366F1).copy(alpha = 0.15f))
+                        .padding(horizontal = 8.dp, vertical = 3.dp)
+                ) {
+                    Text(
+                        text = "DEMO",
+                        color = Color(0xFF4338CA),
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 0.8.sp
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Text(
+                text = warning.title,
+                color = TextDarkNavy,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = warning.text,
+                color = TextSecondarySlate,
+                fontSize = 12.sp,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                lineHeight = 16.sp
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = String.format(Locale.US, "%.4f° N, %.4f° E", warning.latitude, warning.longitude),
+                    color = TextSecondarySlate,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Medium
+                )
+
+                Text(
+                    text = "Tap for details ›",
+                    color = Color(0xFF4F46E5),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Bottom sheet displaying full NavigationalWarning details (title, text, authority, coords).
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun NavAreaWarningBottomSheet(
+    warning: NavigationalWarning,
+    onDismissRequest: () -> Unit
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismissRequest,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = Color.White,
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+        dragHandle = {
+            Box(
+                modifier = Modifier
+                    .padding(top = 12.dp, bottom = 8.dp)
+                    .size(width = 40.dp, height = 4.dp)
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(Color(0xFFCBD5E1))
+            )
+        }
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 8.dp)
+                .verticalScroll(rememberScrollState())
+        ) {
+            // Top badges row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color(0xFF6366F1).copy(alpha = 0.12f))
+                        .padding(horizontal = 10.dp, vertical = 5.dp)
+                ) {
+                    Text(
+                        text = "NAVAREA VIII WARNING",
+                        color = Color(0xFF4F46E5),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 0.8.sp
+                    )
+                }
+
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color(0xFF6366F1).copy(alpha = 0.2f))
+                        .padding(horizontal = 10.dp, vertical = 5.dp)
+                ) {
+                    Text(
+                        text = "DEMO DATA",
+                        color = Color(0xFF4338CA),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 0.8.sp
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Warning Title
+            Text(
+                text = warning.title,
+                color = TextDarkNavy,
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Black,
+                lineHeight = 28.sp
+            )
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            // Reference ID and Issued time
+            Text(
+                text = "Notice ID: ${warning.id} • Issued: ${formatWarningTime(warning.issuedAt)}",
+                color = TextSecondarySlate,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium
+            )
+
+            Spacer(modifier = Modifier.height(18.dp))
+
+            // Detailed Bulletin Text
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color(0xFFF1F5F9))
+                    .padding(16.dp)
+            ) {
+                Column {
+                    Text(
+                        text = "BULLETIN TEXT",
+                        color = TextSecondarySlate,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = warning.text,
+                        color = TextDarkNavy,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Normal,
+                        lineHeight = 22.sp
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Geospatial & Authority Grid
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFF8FAFC)),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("Area / Region:", color = TextSecondarySlate, fontSize = 12.sp)
+                        Text(warning.area, color = TextDarkNavy, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("Coordinates:", color = TextSecondarySlate, fontSize = 12.sp)
+                        Text(
+                            String.format(Locale.US, "%.4f° N, %.4f° E", warning.latitude, warning.longitude),
+                            color = TextDarkNavy,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("Issuing Authority:", color = TextSecondarySlate, fontSize = 12.sp)
+                        Text(warning.authority, color = Color(0xFF4F46E5), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Demo disclaimer notice
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color(0xFF6366F1).copy(alpha = 0.08f))
+                    .padding(12.dp)
+            ) {
+                Text(
+                    text = "ℹ This navigational warning is simulated local test data for SeaSentry. Production builds will connect to live NAVAREA VIII broadcast feeds.",
+                    color = Color(0xFF4338CA),
+                    fontSize = 11.sp,
+                    lineHeight = 16.sp
+                )
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Close Button
+            Button(
+                onClick = onDismissRequest,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+                shape = RoundedCornerShape(25.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = OceanDark,
+                    contentColor = Color.White
+                )
+            ) {
+                Text(
+                    text = "CLOSE BULLETIN",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 0.5.sp
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+        }
+    }
+}
+
+private fun formatWarningTime(timestamp: Long): String {
+    if (timestamp == 0L) return "Recently issued"
+    val sdf = SimpleDateFormat("dd MMM, HH:mm 'UTC'", Locale.US)
+    sdf.timeZone = TimeZone.getTimeZone("UTC")
+    return sdf.format(Date(timestamp))
 }

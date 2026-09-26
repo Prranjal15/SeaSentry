@@ -17,6 +17,7 @@ import androidx.compose.runtime.LaunchedEffect
 import com.seasentry.app.alert.EmergencyAlertManager
 import com.seasentry.app.data.AppDatabase
 import com.seasentry.app.demo.DemoController
+import com.seasentry.app.navarea.NavAreaRepository
 import com.seasentry.app.sos.SOSManager
 import com.seasentry.app.ui.screens.CoastGuardScreen
 import com.seasentry.app.ui.screens.CriticalWarningScreen
@@ -59,7 +60,7 @@ fun SeaSentryApp(
         }
     }
 
-    // Initialize Controllers
+    // Initialize Controllers & Repositories
     val demoController = remember {
         DemoController(
             scope = coroutineScope,
@@ -74,12 +75,17 @@ fun SeaSentryApp(
         )
     }
 
+    val navAreaRepository = remember {
+        NavAreaRepository()
+    }
+
     var currentScreen by remember { mutableStateOf(ScreenDestination.HUB) }
     var userVesselId by remember { mutableStateOf("SEASENTRY-PRO-2026") }
 
     val demoState by demoController.demoUiState.collectAsState()
     val sosState by sosManager.sosState.collectAsState()
     val relayTelemetry by sosManager.relayManager.telemetry.collectAsState()
+    val navWarnings by navAreaRepository.warnings.collectAsState()
 
     val alertEventsFlow = remember { alertDao.getAllAlerts() }
 
@@ -121,7 +127,10 @@ fun SeaSentryApp(
                         onNavigateToHistory = { currentScreen = ScreenDestination.SAFETY_HISTORY },
                         onNavigateToSurvival = { currentScreen = ScreenDestination.SURVIVAL_GUIDE },
                         onNavigateToCoastGuard = { currentScreen = ScreenDestination.COAST_GUARD },
-                        onNavigateToSettings = { currentScreen = ScreenDestination.SETTINGS }
+                        onNavigateToSettings = { currentScreen = ScreenDestination.SETTINGS },
+                        navWarnings = navWarnings,
+                        onSimulateHazardWarning = { navAreaRepository.injectSimulatedWarning() },
+                        onDismissNavWarning = { warningId -> navAreaRepository.removeWarning(warningId) }
                     )
                 }
 

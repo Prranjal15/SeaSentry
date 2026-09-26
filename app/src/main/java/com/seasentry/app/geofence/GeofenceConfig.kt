@@ -1,5 +1,7 @@
 package com.seasentry.app.geofence
 
+import com.seasentry.app.boundary.LatLng
+
 data class MaritimeBoundary(
     val id: String,
     val name: String,
@@ -24,5 +26,9 @@ object GeofenceConfig {
         name = DEFAULT_IMBL_NAME,
         latitude = DEFAULT_IMBL_LAT,
         longitude = DEFAULT_IMBL_LON
+    )
+
+    val DEFAULT_BOUNDARY_LINES: List<List<LatLng>> = listOf(
+        listOf(LatLng(latitude = DEFAULT_IMBL_LAT, longitude = DEFAULT_IMBL_LON))
     )
 }

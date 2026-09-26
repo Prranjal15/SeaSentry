@@ -1,5 +1,6 @@
 package com.seasentry.app.geofence
 
+import com.seasentry.app.boundary.LatLng
 import java.util.Locale
 import kotlin.math.atan2
 import kotlin.math.cos
@@ -25,13 +26,14 @@ data class GeofenceResult(
 }
 
 class GeofenceEngine(
-    private val boundary: MaritimeBoundary = GeofenceConfig.DEFAULT_BOUNDARY,
+    val boundaryLines: List<List<LatLng>> = GeofenceConfig.DEFAULT_BOUNDARY_LINES,
     private val advisoryThreshold: Double = GeofenceConfig.ADVISORY_THRESHOLD_METERS,
     private val warningThreshold: Double = GeofenceConfig.WARNING_THRESHOLD_METERS,
     private val criticalThreshold: Double = GeofenceConfig.CRITICAL_THRESHOLD_METERS
 ) {
     companion object {
         private const val EARTH_RADIUS_METERS = 6371000.0 // WGS84 mean spherical earth radius
+        private const val METERS_PER_LAT_DEGREE_APPROX = 110000.0
     }
 
     /**
@@ -75,16 +77,71 @@ class GeofenceEngine(
     }
 
     /**
-     * Evaluates a vessel's current position against the maritime boundary.
+     * Finds the nearest boundary point to the vessel coordinates across all boundary polylines.
+     * Returns a Pair of the nearest LatLng point and the distance in meters.
+     */
+    fun findNearestPoint(
+        vesselLat: Double,
+        vesselLon: Double,
+        lines: List<List<LatLng>> = boundaryLines
+    ): Pair<LatLng, Double> {
+        var minDistance = Double.MAX_VALUE
+        var nearest: LatLng? = null
+
+        for (line in lines) {
+            for (point in line) {
+                // Fast bounding-box check to avoid costly trigonometric calls on distant points
+                if (minDistance != Double.MAX_VALUE &&
+                    Math.abs(vesselLat - point.latitude) * METERS_PER_LAT_DEGREE_APPROX > minDistance
+                ) {
+                    continue
+                }
+
+                val dist = calculateDistance(vesselLat, vesselLon, point.latitude, point.longitude)
+                if (dist < minDistance) {
+                    minDistance = dist
+                    nearest = point
+                }
+            }
+        }
+
+        val point = nearest ?: LatLng(GeofenceConfig.DEFAULT_IMBL_LAT, GeofenceConfig.DEFAULT_IMBL_LON)
+        val distance = if (minDistance == Double.MAX_VALUE) {
+            calculateDistance(vesselLat, vesselLon, point.latitude, point.longitude)
+        } else {
+            minDistance
+        }
+
+        return Pair(point, distance)
+    }
+
+    /**
+     * Evaluates a vessel's current position against the maritime boundary lines or a custom boundary.
      */
     fun evaluatePosition(
         vesselLat: Double,
         vesselLon: Double,
         customBoundary: MaritimeBoundary? = null
     ): GeofenceResult {
-        val target = customBoundary ?: boundary
-        val distance = calculateDistance(vesselLat, vesselLon, target.latitude, target.longitude)
-        val bearing = calculateBearing(vesselLat, vesselLon, target.latitude, target.longitude)
+        val targetLat: Double
+        val targetLon: Double
+        val boundaryName: String
+        val distance: Double
+
+        if (customBoundary != null) {
+            targetLat = customBoundary.latitude
+            targetLon = customBoundary.longitude
+            boundaryName = customBoundary.name
+            distance = calculateDistance(vesselLat, vesselLon, targetLat, targetLon)
+        } else {
+            val (nearestPoint, dist) = findNearestPoint(vesselLat, vesselLon, boundaryLines)
+            targetLat = nearestPoint.latitude
+            targetLon = nearestPoint.longitude
+            boundaryName = GeofenceConfig.DEFAULT_IMBL_NAME
+            distance = dist
+        }
+
+        val bearing = calculateBearing(vesselLat, vesselLon, targetLat, targetLon)
 
         val alertLevel = when {
             distance <= criticalThreshold -> AlertLevel.CRITICAL
@@ -107,9 +164,9 @@ class GeofenceEngine(
             distanceMeters = distance,
             isBreached = isBreached,
             actionRequired = action,
-            boundaryName = target.name,
-            targetLat = target.latitude,
-            targetLon = target.longitude,
+            boundaryName = boundaryName,
+            targetLat = targetLat,
+            targetLon = targetLon,
             bearingDegrees = bearing
         )
     }
