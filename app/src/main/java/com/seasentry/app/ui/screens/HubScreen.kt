@@ -37,6 +37,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.seasentry.app.location.GpsFixState
+import com.seasentry.app.location.LiveTrackingUiState
+import com.seasentry.app.location.TrackingMode
 import com.seasentry.app.navarea.NavigationalWarning
 import com.seasentry.app.ui.components.AlertBellIcon
 import com.seasentry.app.ui.components.SatelliteIcon
@@ -49,6 +52,7 @@ import com.seasentry.app.ui.theme.OceanDark
 import com.seasentry.app.ui.theme.OrangePrimary
 import com.seasentry.app.ui.theme.OrangeText
 import com.seasentry.app.ui.theme.SkyBlueBackground
+import com.seasentry.app.ui.theme.StatusAmber
 import com.seasentry.app.ui.theme.StatusGreen
 import com.seasentry.app.ui.theme.TextDarkNavy
 import com.seasentry.app.ui.theme.TextSecondarySlate
@@ -71,17 +75,42 @@ fun HubScreen(
     navWarnings: List<NavigationalWarning> = emptyList(),
     onSimulateHazardWarning: () -> Unit = {},
     onDismissNavWarning: ((String) -> Unit)? = null,
+    trackingMode: TrackingMode = TrackingMode.DEMO,
+    onToggleTrackingMode: (TrackingMode) -> Unit = {},
+    gpsFixState: GpsFixState = GpsFixState.IDLE,
+    liveTrackingUiState: LiveTrackingUiState? = null,
+    onRequestLocationPermission: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val scrollState = rememberScrollState()
     var selectedWarning by remember { mutableStateOf<NavigationalWarning?>(null) }
 
-    val formattedCoords = String.format(
-        Locale.US,
-        "%.4f° N, %.4f° E",
-        currentLat,
-        currentLon
-    )
+    val hasGpsCoords = liveTrackingUiState?.latitude != null && liveTrackingUiState.longitude != null
+    val formattedCoords = if (trackingMode == TrackingMode.LIVE_GPS) {
+        if (hasGpsCoords) {
+            String.format(
+                Locale.US,
+                "%.4f° N, %.4f° E",
+                liveTrackingUiState!!.latitude,
+                liveTrackingUiState.longitude
+            )
+        } else {
+            when (gpsFixState) {
+                GpsFixState.PERMISSION_DENIED -> "Location Permission Required"
+                GpsFixState.GPS_DISABLED -> "GPS Hardware Disabled"
+                GpsFixState.ACQUIRING -> "Acquiring GPS fix (offline satellites)..."
+                GpsFixState.IDLE -> "GPS Standby"
+                else -> "No coordinates acquired"
+            }
+        }
+    } else {
+        String.format(
+            Locale.US,
+            "%.4f° N, %.4f° E",
+            currentLat,
+            currentLon
+        )
+    }
 
     Box(
         modifier = modifier
@@ -115,6 +144,71 @@ fun HubScreen(
                     .padding(horizontal = 20.dp, vertical = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                // Tracking Mode Segmented Switcher
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = CardWhite),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(6.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        // Live GPS Pill
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(
+                                    if (trackingMode == TrackingMode.LIVE_GPS) OceanDark else Color(0xFFF1F5F9)
+                                )
+                                .clickable { onToggleTrackingMode(TrackingMode.LIVE_GPS) }
+                                .padding(vertical = 12.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("🛰", fontSize = 13.sp)
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "LIVE HARDWARE GPS",
+                                    color = if (trackingMode == TrackingMode.LIVE_GPS) Color.White else TextDarkNavy,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = 0.5.sp
+                                )
+                            }
+                        }
+
+                        // Demo Simulation Pill
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(
+                                    if (trackingMode == TrackingMode.DEMO) OceanDark else Color(0xFFF1F5F9)
+                                )
+                                .clickable { onToggleTrackingMode(TrackingMode.DEMO) }
+                                .padding(vertical = 12.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("⚡", fontSize = 13.sp)
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "DEMO SIMULATION",
+                                    color = if (trackingMode == TrackingMode.DEMO) Color.White else TextDarkNavy,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = 0.5.sp
+                                )
+                            }
+                        }
+                    }
+                }
+
                 // Card 1: Navy Vessel Status Card (matching Image 4)
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -131,17 +225,112 @@ fun HubScreen(
                         // Top status badge
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            SatelliteIcon(modifier = Modifier.size(18.dp), color = StatusGreen)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "NAVIC SATELLITE: ACTIVE",
-                                color = StatusGreen,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                letterSpacing = 0.8.sp
-                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                if (trackingMode == TrackingMode.LIVE_GPS) {
+                                    when (gpsFixState) {
+                                        GpsFixState.FIXED -> {
+                                            SatelliteIcon(modifier = Modifier.size(18.dp), color = StatusGreen)
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(
+                                                text = "GPS SATELLITE FIX: LOCKED",
+                                                color = StatusGreen,
+                                                fontSize = 12.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                letterSpacing = 0.8.sp
+                                            )
+                                        }
+                                        GpsFixState.ACQUIRING -> {
+                                            SatelliteIcon(modifier = Modifier.size(18.dp), color = StatusAmber)
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(
+                                                text = if (liveTrackingUiState?.seedFixAgeMs != null) "ACQUIRING (CACHED FIX)" else "ACQUIRING GPS SIGNAL…",
+                                                color = StatusAmber,
+                                                fontSize = 12.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                letterSpacing = 0.8.sp
+                                            )
+                                        }
+                                        GpsFixState.PERMISSION_DENIED -> {
+                                            SatelliteIcon(modifier = Modifier.size(18.dp), color = EmergencyRed)
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(
+                                                text = "PERMISSION REQUIRED",
+                                                color = EmergencyRed,
+                                                fontSize = 12.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                letterSpacing = 0.8.sp
+                                            )
+                                        }
+                                        GpsFixState.GPS_DISABLED -> {
+                                            SatelliteIcon(modifier = Modifier.size(18.dp), color = EmergencyRed)
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(
+                                                text = "GPS DISABLED IN SETTINGS",
+                                                color = EmergencyRed,
+                                                fontSize = 12.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                letterSpacing = 0.8.sp
+                                            )
+                                        }
+                                        GpsFixState.IDLE -> {
+                                            SatelliteIcon(modifier = Modifier.size(18.dp), color = Color.White.copy(alpha = 0.7f))
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(
+                                                text = "GPS STANDBY",
+                                                color = Color.White.copy(alpha = 0.7f),
+                                                fontSize = 12.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                letterSpacing = 0.8.sp
+                                            )
+                                        }
+                                    }
+                                } else {
+                                    SatelliteIcon(modifier = Modifier.size(18.dp), color = StatusGreen)
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = "NAVIC SATELLITE: ACTIVE",
+                                        color = StatusGreen,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        letterSpacing = 0.8.sp
+                                    )
+                                }
+                            }
+
+                            // Accuracy badge or Mode tag
+                            if (trackingMode == TrackingMode.LIVE_GPS && liveTrackingUiState?.accuracyMeters != null) {
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .background(Color.White.copy(alpha = 0.15f))
+                                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                                ) {
+                                    Text(
+                                        text = "±${liveTrackingUiState.accuracyMeters.toInt()}m",
+                                        color = Color.White,
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            } else if (trackingMode == TrackingMode.DEMO) {
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .background(OrangePrimary.copy(alpha = 0.2f))
+                                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                                ) {
+                                    Text(
+                                        text = "DEMO",
+                                        color = OrangePrimary,
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Black,
+                                        letterSpacing = 0.5.sp
+                                    )
+                                }
+                            }
                         }
 
                         Spacer(modifier = Modifier.height(20.dp))
@@ -159,10 +348,52 @@ fun HubScreen(
                         Text(
                             text = formattedCoords,
                             color = Color.White,
-                            fontSize = 16.sp,
+                            fontSize = if (formattedCoords.length > 25) 14.sp else 16.sp,
                             fontWeight = FontWeight.Bold,
                             letterSpacing = 0.5.sp
                         )
+
+                        if (trackingMode == TrackingMode.LIVE_GPS) {
+                            when (gpsFixState) {
+                                GpsFixState.ACQUIRING -> {
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = if (liveTrackingUiState?.seedFixAgeMs != null)
+                                            "Displaying cached fix from ${(liveTrackingUiState.seedFixAgeMs / 1000).coerceAtLeast(1)}s ago • Searching satellites"
+                                        else
+                                            "Standalone satellite lock in progress (No internet / SIM required)",
+                                        color = Color.White.copy(alpha = 0.75f),
+                                        fontSize = 11.sp
+                                    )
+                                }
+                                GpsFixState.PERMISSION_DENIED -> {
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                    Button(
+                                        onClick = onRequestLocationPermission,
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = EmergencyRed,
+                                            contentColor = Color.White
+                                        ),
+                                        shape = RoundedCornerShape(12.dp)
+                                    ) {
+                                        Text(
+                                            "GRANT LOCATION PERMISSION",
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+                                GpsFixState.FIXED -> {
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    Text(
+                                        text = "Direct hardware GPS provider • 100% offline",
+                                        color = Color.White.copy(alpha = 0.7f),
+                                        fontSize = 11.sp
+                                    )
+                                }
+                                else -> {}
+                            }
+                        }
                     }
                 }
 
@@ -193,8 +424,15 @@ fun HubScreen(
                             fontWeight = FontWeight.Black
                         )
                         Spacer(modifier = Modifier.height(4.dp))
+                        val speedText = if (trackingMode == TrackingMode.LIVE_GPS && liveTrackingUiState?.fixState == GpsFixState.FIXED) {
+                            String.format(Locale.US, "Speed: %.1f kts • Heading %03d° • Barometer 1012 hPa", liveTrackingUiState.speedKnots, liveTrackingUiState.headingDegrees.toInt())
+                        } else if (trackingMode == TrackingMode.LIVE_GPS && liveTrackingUiState?.seedFixAgeMs != null) {
+                            String.format(Locale.US, "Speed: %.1f kts (Cached) • Heading %03d° • Barometer 1012 hPa", liveTrackingUiState.speedKnots, liveTrackingUiState.headingDegrees.toInt())
+                        } else {
+                            "Wind: 12 kts NE • Sea State 2 • Barometer 1012 hPa"
+                        }
                         Text(
-                            text = "Wind: 12 kts NE • Sea State 2 • Barometer 1012 hPa",
+                            text = speedText,
                             color = TextSecondarySlate,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Medium

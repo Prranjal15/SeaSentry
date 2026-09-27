@@ -17,8 +17,19 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -37,12 +48,16 @@ import com.seasentry.app.ui.theme.StatusGreen
 import com.seasentry.app.ui.theme.TextDarkNavy
 import com.seasentry.app.ui.theme.TextSecondarySlate
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val scrollState = rememberScrollState()
+    var selectedLanguage by remember { mutableStateOf("English") }
+    var languageExpanded by remember { mutableStateOf(false) }
+    val languageOptions = listOf("English", "हिंदी (Hindi)", "मराठी (Marathi)", "தமிழ் (Tamil)")
 
     Box(
         modifier = modifier
@@ -64,6 +79,86 @@ fun SettingsScreen(
                     .padding(horizontal = 20.dp, vertical = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                // App Language Card
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(18.dp),
+                    colors = CardDefaults.cardColors(containerColor = CardWhite),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(18.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Text(
+                            text = "APP LANGUAGE",
+                            color = OrangeText,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Black,
+                            letterSpacing = 1.sp
+                        )
+
+                        Text(
+                            text = "Select preferred language for navigation alerts and voice advisories.",
+                            color = TextSecondarySlate,
+                            fontSize = 13.sp
+                        )
+
+                        ExposedDropdownMenuBox(
+                            expanded = languageExpanded,
+                            onExpandedChange = { languageExpanded = it },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            OutlinedTextField(
+                                value = selectedLanguage,
+                                onValueChange = {},
+                                readOnly = true,
+                                trailingIcon = {
+                                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = languageExpanded)
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, true),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedContainerColor = CardWhite,
+                                    unfocusedContainerColor = CardWhite,
+                                    focusedBorderColor = OrangePrimary,
+                                    unfocusedBorderColor = Color(0xFFD0D7DE),
+                                    focusedTextColor = TextDarkNavy,
+                                    unfocusedTextColor = TextDarkNavy
+                                )
+                            )
+
+                            ExposedDropdownMenu(
+                                expanded = languageExpanded,
+                                onDismissRequest = { languageExpanded = false },
+                                modifier = Modifier.background(CardWhite)
+                            ) {
+                                languageOptions.forEach { language ->
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text(
+                                                text = language,
+                                                color = if (language == selectedLanguage) OrangePrimary else TextDarkNavy,
+                                                fontWeight = if (language == selectedLanguage) FontWeight.Bold else FontWeight.Normal,
+                                                fontSize = 14.sp
+                                            )
+                                        },
+                                        onClick = {
+                                            selectedLanguage = language
+                                            languageExpanded = false
+                                        },
+                                        contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
                 // Vessel Registration Card
                 Card(
                     modifier = Modifier.fillMaxWidth(),

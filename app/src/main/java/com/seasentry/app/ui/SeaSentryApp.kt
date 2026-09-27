@@ -1,9 +1,14 @@
 package com.seasentry.app.ui
 
+import android.Manifest
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -12,11 +17,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import com.seasentry.app.alert.EmergencyAlertManager
 import com.seasentry.app.data.AppDatabase
 import com.seasentry.app.demo.DemoController
+import com.seasentry.app.location.LiveTrackingController
+import com.seasentry.app.location.TrackingMode
 import com.seasentry.app.navarea.NavAreaRepository
 import com.seasentry.app.sos.SOSManager
 import com.seasentry.app.ui.screens.CoastGuardScreen
@@ -60,12 +65,35 @@ fun SeaSentryApp(
         }
     }
 
-    // Initialize Controllers & Repositories
+    // Initialize Simulated Demo Controller (Intact Mock Location Provider)
     val demoController = remember {
         DemoController(
             scope = coroutineScope,
             alertDao = alertDao
         )
+    }
+
+    // Initialize Live Standalone Hardware GPS Tracking Controller (100% Offline Satellite Location)
+    val liveTrackingController = remember {
+        LiveTrackingController(
+            context = context.applicationContext,
+            scope = coroutineScope,
+            alertDao = alertDao
+        )
+    }
+
+    // Tracking Mode Toggle State (DEMO vs LIVE_GPS)
+    var trackingMode by remember { mutableStateOf(TrackingMode.DEMO) }
+
+    // Runtime Permission Launcher for direct ACCESS_FINE_LOCATION
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            liveTrackingController.startTracking()
+        } else {
+            liveTrackingController.refreshGpsStatus()
+        }
     }
 
     val sosManager = remember {
@@ -83,15 +111,35 @@ fun SeaSentryApp(
     var userVesselId by remember { mutableStateOf("SEASENTRY-PRO-2026") }
 
     val demoState by demoController.demoUiState.collectAsState()
+    val liveState by liveTrackingController.liveTrackingUiState.collectAsState()
     val sosState by sosManager.sosState.collectAsState()
     val relayTelemetry by sosManager.relayManager.telemetry.collectAsState()
     val navWarnings by navAreaRepository.warnings.collectAsState()
 
     val alertEventsFlow = remember { alertDao.getAllAlerts() }
 
+    // Active position coordinates sourced dynamically from whichever tracking controller is active
+    val activeLat = if (trackingMode == TrackingMode.LIVE_GPS) {
+        liveState.latitude ?: demoState.latitude
+    } else {
+        demoState.latitude
+    }
+
+    val activeLon = if (trackingMode == TrackingMode.LIVE_GPS) {
+        liveState.longitude ?: demoState.longitude
+    } else {
+        demoState.longitude
+    }
+
+    val isCriticalScreenActive = if (trackingMode == TrackingMode.LIVE_GPS) {
+        liveState.isCriticalScreenActive
+    } else {
+        demoState.isCriticalScreenActive
+    }
+
     // Trigger Emergency Sound & Vibration on transition to CRITICAL, and stop when muted/dismissed/reset
-    LaunchedEffect(demoState.isCriticalScreenActive) {
-        if (demoState.isCriticalScreenActive) {
+    LaunchedEffect(isCriticalScreenActive) {
+        if (isCriticalScreenActive) {
             emergencyAlertManager.startEmergencyAlert()
         } else {
             emergencyAlertManager.stopEmergencyAlert()
@@ -113,14 +161,14 @@ fun SeaSentryApp(
 
                 ScreenDestination.HUB -> {
                     HubScreen(
-                        currentLat = demoState.latitude,
-                        currentLon = demoState.longitude,
+                        currentLat = activeLat,
+                        currentLon = activeLon,
                         isSOSActive = sosState.isDistressActive,
                         onSendSOS = {
                             sosManager.triggerSOS(
                                 senderId = userVesselId,
-                                latitude = demoState.latitude,
-                                longitude = demoState.longitude
+                                latitude = activeLat,
+                                longitude = activeLon
                             )
                         },
                         onNavigateToDemo = { currentScreen = ScreenDestination.DEMO },
@@ -130,7 +178,25 @@ fun SeaSentryApp(
                         onNavigateToSettings = { currentScreen = ScreenDestination.SETTINGS },
                         navWarnings = navWarnings,
                         onSimulateHazardWarning = { navAreaRepository.injectSimulatedWarning() },
-                        onDismissNavWarning = { warningId -> navAreaRepository.removeWarning(warningId) }
+                        onDismissNavWarning = { warningId -> navAreaRepository.removeWarning(warningId) },
+                        trackingMode = trackingMode,
+                        onToggleTrackingMode = { mode ->
+                            trackingMode = mode
+                            if (mode == TrackingMode.LIVE_GPS) {
+                                if (liveTrackingController.hasLocationPermission()) {
+                                    liveTrackingController.startTracking()
+                                } else {
+                                    locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+                                }
+                            } else {
+                                liveTrackingController.stopTracking()
+                            }
+                        },
+                        gpsFixState = liveState.fixState,
+                        liveTrackingUiState = liveState,
+                        onRequestLocationPermission = {
+                            locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+                        }
                     )
                 }
 
@@ -191,11 +257,15 @@ fun SeaSentryApp(
             }
         }
 
-        // Full Screen Critical Warning Modal Overlay (Image 1)
-        if (demoState.isCriticalScreenActive) {
+        // Full Screen Critical Warning Modal Overlay
+        if (isCriticalScreenActive) {
             CriticalWarningScreen(
                 onDismiss = {
-                    demoController.dismissCriticalAlert()
+                    if (trackingMode == TrackingMode.LIVE_GPS) {
+                        liveTrackingController.dismissCriticalAlert()
+                    } else {
+                        demoController.dismissCriticalAlert()
+                    }
                 }
             )
         }
