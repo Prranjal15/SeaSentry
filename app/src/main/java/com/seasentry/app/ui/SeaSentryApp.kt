@@ -18,6 +18,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import com.seasentry.app.alert.EmergencyAlertManager
+import com.seasentry.app.audio.AlertLanguageStore
+import com.seasentry.app.audio.AlertSoundController
 import com.seasentry.app.auth.AuthGate
 import com.seasentry.app.data.AppDatabase
 import com.seasentry.app.demo.DemoController
@@ -67,12 +69,15 @@ private fun SeaSentryAppContent(
     val alertDao = remember { database.alertDao() }
     val sosDao = remember { database.sosDao() }
 
-    // Initialize Emergency Alert Manager (Audio + Vibration)
+    // Initialize Audio & Emergency Alert Controllers
+    val alertLanguageStore = remember { AlertLanguageStore(context.applicationContext) }
+    val alertSoundController = remember { AlertSoundController(context.applicationContext) }
     val emergencyAlertManager = remember { EmergencyAlertManager(context.applicationContext) }
 
     DisposableEffect(Unit) {
         onDispose {
             emergencyAlertManager.release()
+            alertSoundController.release()
         }
     }
 
@@ -149,10 +154,13 @@ private fun SeaSentryAppContent(
     }
 
     // Trigger Emergency Sound & Vibration on transition to CRITICAL, and stop when muted/dismissed/reset
-    LaunchedEffect(isCriticalScreenActive) {
+    LaunchedEffect(isCriticalScreenActive, trackingMode) {
         if (isCriticalScreenActive) {
+            val language = alertLanguageStore.getLanguage()
+            alertSoundController.start(language)
             emergencyAlertManager.startEmergencyAlert()
         } else {
+            alertSoundController.stop()
             emergencyAlertManager.stopEmergencyAlert()
         }
     }
@@ -263,7 +271,8 @@ private fun SeaSentryAppContent(
                 ScreenDestination.SETTINGS -> {
                     SettingsScreen(
                         onBackClick = { currentScreen = ScreenDestination.HUB },
-                        onLogout = onLogout
+                        onLogout = onLogout,
+                        alertLanguageStore = alertLanguageStore
                     )
                 }
             }

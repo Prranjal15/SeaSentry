@@ -26,6 +26,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -34,9 +35,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.seasentry.app.audio.AlertLanguage
+import com.seasentry.app.audio.AlertLanguageStore
 import com.seasentry.app.auth.LogoutConfirmationDialog
 import com.seasentry.app.geofence.GeofenceConfig
 import com.seasentry.app.ui.components.SeaSentryTopHeader
@@ -57,13 +61,16 @@ import androidx.compose.material3.ButtonDefaults
 fun SettingsScreen(
     onBackClick: () -> Unit,
     onLogout: (() -> Unit)? = null,
+    alertLanguageStore: AlertLanguageStore? = null,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    val languageStore = alertLanguageStore ?: remember { AlertLanguageStore(context.applicationContext) }
+    val selectedLanguage by languageStore.selectedLanguage.collectAsState()
     val scrollState = rememberScrollState()
     var showLogoutDialog by remember { mutableStateOf(false) }
-    var selectedLanguage by remember { mutableStateOf("English") }
     var languageExpanded by remember { mutableStateOf(false) }
-    val languageOptions = listOf("English", "हिंदी (Hindi)", "मराठी (Marathi)", "தமிழ் (Tamil)")
+    val languageOptions = AlertLanguage.entries
 
     Box(
         modifier = modifier
@@ -179,7 +186,7 @@ fun SettingsScreen(
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             OutlinedTextField(
-                                value = selectedLanguage,
+                                value = selectedLanguage.displayName,
                                 onValueChange = {},
                                 readOnly = true,
                                 trailingIcon = {
@@ -208,14 +215,14 @@ fun SettingsScreen(
                                     DropdownMenuItem(
                                         text = {
                                             Text(
-                                                text = language,
+                                                text = language.displayName,
                                                 color = if (language == selectedLanguage) OrangePrimary else TextDarkNavy,
                                                 fontWeight = if (language == selectedLanguage) FontWeight.Bold else FontWeight.Normal,
                                                 fontSize = 14.sp
                                             )
                                         },
                                         onClick = {
-                                            selectedLanguage = language
+                                            languageStore.setLanguage(language)
                                             languageExpanded = false
                                         },
                                         contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
