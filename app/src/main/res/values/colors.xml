@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="ic_launcher_background">#FA5A00</color>
+    <color name="splash_background">#0A192F</color>
+    <color name="primary_orange">#FA5A00</color>
+    <color name="ocean_dark">#0A192F</color>
+    <color name="ocean_card">#0B1E38</color>
+    <color name="card_white">#FFFFFF</color>
+    <color name="sky_blue_background">#CBE7FE</color>
+</resources>

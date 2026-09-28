@@ -2,4 +2,10 @@
 <resources>
 
     <style name="Theme.SeaSentry" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <style name="Theme.SeaSentry.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/splash_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_logo</item>
+        <item name="postSplashScreenTheme">@style/Theme.SeaSentry</item>
+    </style>
 </resources>

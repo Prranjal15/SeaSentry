@@ -18,6 +18,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import com.seasentry.app.alert.EmergencyAlertManager
+import com.seasentry.app.auth.AuthGate
 import com.seasentry.app.data.AppDatabase
 import com.seasentry.app.demo.DemoController
 import com.seasentry.app.location.LiveTrackingController
@@ -46,6 +47,16 @@ enum class ScreenDestination {
 
 @Composable
 fun SeaSentryApp(
+    modifier: Modifier = Modifier
+) {
+    AuthGate(modifier = modifier) { onLogout ->
+        SeaSentryAppContent(onLogout = onLogout)
+    }
+}
+
+@Composable
+private fun SeaSentryAppContent(
+    onLogout: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -251,7 +262,8 @@ fun SeaSentryApp(
 
                 ScreenDestination.SETTINGS -> {
                     SettingsScreen(
-                        onBackClick = { currentScreen = ScreenDestination.HUB }
+                        onBackClick = { currentScreen = ScreenDestination.HUB },
+                        onLogout = onLogout
                     )
                 }
             }

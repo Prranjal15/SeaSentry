@@ -5,12 +5,7 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Maritime Safety Boundary Shield Base -->
-    <path
-        android:fillColor="#0A192F"
-        android:pathData="M54,26 C64,28 72,28 75,32 C75,56 65,72 54,78 C43,72 33,56 33,32 C36,28 44,28 54,26 Z" />
-
-    <!-- Shield Border Highlight -->
+    <!-- Monochrome Shield Outline -->
     <path
         android:strokeColor="#FFFFFF"
         android:strokeWidth="2.5"
@@ -19,9 +14,9 @@
         android:fillColor="#00000000"
         android:pathData="M54,26 C64,28 72,28 75,32 C75,56 65,72 54,78 C43,72 33,56 33,32 C36,28 44,28 54,26 Z" />
 
-    <!-- Radar / Boundary Horizon Line -->
+    <!-- Horizon Line -->
     <path
-        android:strokeColor="#64FFDA"
+        android:strokeColor="#FFFFFF"
         android:strokeWidth="1.8"
         android:strokeLineCap="round"
         android:fillColor="#00000000"
@@ -37,7 +32,7 @@
 
     <!-- Vessel Main Sail -->
     <path
-        android:fillColor="#FA5A00"
+        android:fillColor="#FFFFFF"
         android:pathData="M55,35 L66,47 L55,47 Z" />
 
     <!-- Vessel Jib Sail -->
@@ -54,9 +49,9 @@
         android:fillColor="#FFFFFF"
         android:pathData="M40,54 L68,54 C66,61 60,66 54,66 C48,66 42,61 40,54 Z" />
 
-    <!-- Maritime Anchor Flukes at Shield Base -->
+    <!-- Anchor Flukes -->
     <path
-        android:strokeColor="#64FFDA"
+        android:strokeColor="#FFFFFF"
         android:strokeWidth="2"
         android:strokeLineCap="round"
         android:fillColor="#00000000"

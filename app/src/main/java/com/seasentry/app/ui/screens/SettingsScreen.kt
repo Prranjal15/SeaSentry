@@ -37,24 +37,30 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.seasentry.app.auth.LogoutConfirmationDialog
 import com.seasentry.app.geofence.GeofenceConfig
 import com.seasentry.app.ui.components.SeaSentryTopHeader
 import com.seasentry.app.ui.components.VesselLineArtIcon
 import com.seasentry.app.ui.theme.CardWhite
+import com.seasentry.app.ui.theme.EmergencyRed
 import com.seasentry.app.ui.theme.OrangePrimary
 import com.seasentry.app.ui.theme.OrangeText
 import com.seasentry.app.ui.theme.SkyBlueBackground
 import com.seasentry.app.ui.theme.StatusGreen
 import com.seasentry.app.ui.theme.TextDarkNavy
 import com.seasentry.app.ui.theme.TextSecondarySlate
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     onBackClick: () -> Unit,
+    onLogout: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val scrollState = rememberScrollState()
+    var showLogoutDialog by remember { mutableStateOf(false) }
     var selectedLanguage by remember { mutableStateOf("English") }
     var languageExpanded by remember { mutableStateOf(false) }
     val languageOptions = listOf("English", "हिंदी (Hindi)", "मराठी (Marathi)", "தமிழ் (Tamil)")
@@ -79,6 +85,67 @@ fun SettingsScreen(
                     .padding(horizontal = 20.dp, vertical = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                // Account Card (Placed directly ABOVE App Language Card)
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(18.dp),
+                    colors = CardDefaults.cardColors(containerColor = CardWhite),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(18.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Text(
+                            text = "ACCOUNT",
+                            color = OrangeText,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Black,
+                            letterSpacing = 1.sp
+                        )
+
+                        Text(
+                            text = "Active commander session and vessel credentials.",
+                            color = TextSecondarySlate,
+                            fontSize = 13.sp
+                        )
+
+                        Spacer(modifier = Modifier.height(2.dp))
+
+                        Button(
+                            onClick = { showLogoutDialog = true },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(48.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = EmergencyRed,
+                                contentColor = Color.White
+                            )
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text(
+                                    text = "⎋",
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "LOG OUT",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = 0.5.sp
+                                )
+                            }
+                        }
+                    }
+                }
+
                 // App Language Card
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -247,6 +314,20 @@ fun SettingsScreen(
 
                 Spacer(modifier = Modifier.height(40.dp))
             }
+        }
+
+        if (showLogoutDialog) {
+            LogoutConfirmationDialog(
+                vesselName = "Active Vessel",
+                vesselId = "",
+                onConfirm = {
+                    showLogoutDialog = false
+                    onLogout?.invoke()
+                },
+                onDismiss = {
+                    showLogoutDialog = false
+                }
+            )
         }
     }
 }
